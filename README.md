@@ -1,0 +1,2 @@
+# 144by144-chiral-bivalve-lattice-mathematical-framework-CAD
+3D logarithmic bivalve shell geometry of a dual 144-node Fibonacci lattice offset by the Golden Angle (~137.5°). The architecture models non-linear topological field mechanics, piezoelectric stress-tensor coupling, and Bessel-correlated standing-wave induction to harvest clean, scalable electromagnetic power from a chiral topological vortex.
