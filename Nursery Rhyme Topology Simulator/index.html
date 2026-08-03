@@ -1,0 +1,165 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Nursery Rhyme Topology Simulator</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <style>
+        body { margin: 0; overflow: hidden; background-color: #0a0a0a; color: #e0e0e0; font-family: 'Courier New', Courier, monospace; }
+        #ui-panel { position: absolute; top: 20px; left: 20px; z-index: 100; background: rgba(15, 15, 15, 0.85); padding: 20px; border-radius: 8px; border: 1px solid #333; width: 280px; box-shadow: 0 4px 15px rgba(0,0,0,0.5); }
+        h3 { margin-top: 0; color: #4CAF50; border-bottom: 1px solid #333; padding-bottom: 10px; font-size: 16px; }
+        .control-group { margin-bottom: 15px; }
+        input[type="range"] { width: 100%; cursor: pointer; }
+        button { width: 100%; padding: 10px; cursor: pointer; background: #4CAF50; border: none; color: white; border-radius: 4px; font-weight: bold; font-family: inherit; margin-bottom: 10px; }
+        button:hover { background: #45a049; }
+        #reset-btn { background: #555; }
+        #reset-btn:hover { background: #666; }
+        .readout { font-size: 14px; margin: 5px 0; }
+        #status-readout { font-weight: bold; color: #4CAF50; }
+        #yield-readout { color: #ffeb3b; }
+    </style>
+</head>
+<body>
+
+    <div id="ui-panel">
+        <h3>Register 1: Extraction Node</h3>
+        
+        <div class="control-group">
+            <label>Time Step (dt): <span id="dt-val">0.010</span></label>
+            <input type="range" id="dt-slider" min="0.001" max="0.100" step="0.001" value="0.010">
+        </div>
+
+        <button id="run-btn">Run Extraction</button>
+        <button id="reset-btn">Reset Matrix</button>
+
+        <div class="readout">Status: <span id="status-readout">Stable (Locked)</span></div>
+        <div class="readout">Yield (ΔE): <span id="yield-readout">0.0000</span></div>
+    </div>
+
+    <script>
+        // 1. Scene Setup
+        const scene = new THREE.Scene();
+        const camera = new THREE.PerspectiveCamera(60, window.innerWidth / window.innerHeight, 0.1, 1000);
+        const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
+        renderer.setSize(window.innerWidth, window.innerHeight);
+        document.body.appendChild(renderer.domElement);
+
+        // Lighting
+        const ambientLight = new THREE.AmbientLight(0xffffff, 0.4);
+        scene.add(ambientLight);
+        const pointLight = new THREE.PointLight(0x4CAF50, 1.5, 50);
+        pointLight.position.set(5, 5, 5);
+        scene.add(pointLight);
+
+        // 2. The Baryon Matrix (Torus Knot)
+        let knotGeometry = new THREE.TorusKnotGeometry(2, 0.6, 288, 48, 3, 7); // 288 sparks, heptagonal 7-twist
+        let knotMaterial = new THREE.MeshPhysicalMaterial({ 
+            color: 0x2196F3, wireframe: true, emissive: 0x0d47a1, emissiveIntensity: 0.5 
+        });
+        let baryon = new THREE.Mesh(knotGeometry, knotMaterial);
+        scene.add(baryon);
+
+        camera.position.z = 8;
+
+        // 3. State Variables
+        let isExtracting = false;
+        let isBurnout = false;
+        let totalYield = 0;
+        let matrixTrace = 100; // Represents the binding tension
+
+        // UI Elements
+        const dtSlider = document.getElementById('dt-slider');
+        const dtVal = document.getElementById('dt-val');
+        const runBtn = document.getElementById('run-btn');
+        const resetBtn = document.getElementById('reset-btn');
+        const statusReadout = document.getElementById('status-readout');
+        const yieldReadout = document.getElementById('yield-readout');
+
+        dtSlider.addEventListener('input', (e) => {
+            dtVal.innerText = parseFloat(e.target.value).toFixed(3);
+        });
+
+        runBtn.addEventListener('click', () => {
+            if(!isBurnout && matrixTrace > 0) isExtracting = true;
+        });
+
+        resetBtn.addEventListener('click', resetSimulation);
+
+        function resetSimulation() {
+            isExtracting = false;
+            isBurnout = false;
+            totalYield = 0;
+            matrixTrace = 100;
+            baryon.scale.set(1, 1, 1);
+            baryon.material.color.setHex(0x2196F3);
+            baryon.material.emissive.setHex(0x0d47a1);
+            baryon.material.wireframe = true;
+            statusReadout.innerText = "Stable (Locked)";
+            statusReadout.style.color = "#4CAF50";
+            yieldReadout.innerText = "0.0000";
+        }
+
+        // 4. The Extraction Loop (Nursery Rhyme Algorithm)
+        function animate() {
+            requestAnimationFrame(animate);
+
+            // Baseline rotation (simulating T7 spooling)
+            if (!isBurnout) {
+                baryon.rotation.x += 0.005;
+                baryon.rotation.y += 0.010;
+            }
+
+            if (isExtracting && !isBurnout && matrixTrace > 0) {
+                let dt = parseFloat(dtSlider.value);
+
+                // Critical Fail-Safe Check
+                if (dt > 0.05) { 
+                    // Burnout: dt too high, continuous math fails
+                    isBurnout = true;
+                    isExtracting = false;
+                    statusReadout.innerText = "CRITICAL BURNOUT";
+                    statusReadout.style.color = "#f44336";
+                    
+                    // Visual Shatter effect
+                    baryon.material.wireframe = false;
+                    baryon.material.color.setHex(0xf44336);
+                    baryon.material.emissive.setHex(0xb71c1c);
+                    baryon.scale.set(1.5, 1.5, 1.5);
+                } else {
+                    // Successful Refraction micro-rotation
+                    statusReadout.innerText = "Extracting Tension...";
+                    statusReadout.style.color = "#ffeb3b";
+                    
+                    // Yield calculation (shrinking the knot as tension bleeds)
+                    let energyStep = (0.05 - dt) * 0.5; // Optimal yield at lower dt
+                    totalYield += energyStep;
+                    matrixTrace -= 0.1;
+                    
+                    let scaleTarget = matrixTrace / 100;
+                    baryon.scale.set(scaleTarget, scaleTarget, scaleTarget);
+                    
+                    yieldReadout.innerText = totalYield.toFixed(4);
+
+                    if (matrixTrace <= 0) {
+                        isExtracting = false;
+                        statusReadout.innerText = "Extraction Complete";
+                        statusReadout.style.color = "#4CAF50";
+                        baryon.visible = false; // Particle fully unspooled
+                    }
+                }
+            }
+            renderer.render(scene, camera);
+        }
+
+        // Handle Window Resize
+        window.addEventListener('resize', () => {
+            renderer.setSize(window.innerWidth, window.innerHeight);
+            camera.aspect = window.innerWidth / window.innerHeight;
+            camera.updateProjectionMatrix();
+        });
+
+        animate();
+    </script>
+</body>
+</html>
